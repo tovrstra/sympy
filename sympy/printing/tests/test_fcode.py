@@ -1,4 +1,4 @@
-from sympy import sin, cos, symbols
+from sympy import sin, cos, symbols, Catalan, EulerGamma, E, GoldenRatio, pi
 from sympy import Function, Rational, Integer
 
 from sympy.printing import fcode
@@ -32,3 +32,13 @@ def test_fcode_Integer():
 def test_fcode_functions():
     x, y = symbols('xy')
     assert fcode(sin(x) ** cos(y)) == "sin(x)**cos(y)"
+
+def test_fcode_NumberSymbol():
+    assert fcode(Catalan) == '0.915965594177219'
+    assert fcode(EulerGamma) == '0.577215664901533'
+    assert fcode(E) == '2.71828182845905'
+    assert fcode(GoldenRatio) == '1.61803398874989'
+    assert fcode(pi) == '3.14159265358979'
+    assert fcode(pi,5) == '3.1416'
+
+

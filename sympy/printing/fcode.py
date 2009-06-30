@@ -34,26 +34,49 @@ class FCodePrinter(StrPrinter):
         else:
             return StrPrinter._print_Pow(self, expr)
 
+    def _print_NumberSymbol(self, expr):
+        # Standard Fortran has no predefined constants. Therefor NumerSymbols
+        # are evaluated.
+        return str(expr.evalf(self._settings["precision"]))
+
+    _print_Catalan = _print_NumberSymbol
+    _print_EulerGamma = _print_NumberSymbol
+    _print_Exp1 = _print_NumberSymbol
+    _print_GoldenRatio = _print_NumberSymbol
+    _print_Pi = _print_NumberSymbol
+
     def _print_Rational(self, expr):
         p, q = int(expr.p), int(expr.q)
         return '%d.0/%d.0' % (p, q)
 
 
-def fcode(expr):
+def fcode(expr, precision=15):
     """Converts an expr to a string of Fortran 77 code
 
-        >>> from sympy import *
-        >>> from sympy.abc import *
+       Arguments:
+         expr  --  a sympy expression to be converted
 
-        >>> fcode((2*tau)**Rational(7,2))
-        '8*2**(1.0/2.0)*tau**(7.0/2.0)'
-        >>> fcode(sin(x))
-        'sin(x)'
+       Optional arguments:
+         precision  --  the precission for numbers such as pi [default=15]
+
+       >>> from sympy import *
+       >>> x, tau = symbols(["x", "tau"])
+
+       >>> fcode((2*tau)**Rational(7,2))
+       '8*2**(1.0/2.0)*tau**(7.0/2.0)'
+       >>> fcode(sin(x))
+       'sin(x)'
+       >>> fcode(pi)
+       '3.14159265358979'
     """
-    return FCodePrinter().doprint(expr)
+    profile = {
+        "full_prec": False, # programmers don't care about trailing zeros.
+        "precision": precision,
+    }
+    return FCodePrinter(profile).doprint(expr)
 
 
-def print_fcode(expr):
+def print_fcode(expr, precision=15):
     """Prints the Fortran representation of the given expression."""
-    print fcode(expr)
+    print fcode(expr, precision)
 
