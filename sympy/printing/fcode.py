@@ -46,7 +46,7 @@ implicit_functions = {
 
 
 class FCodePrinter(StrPrinter):
-    """A printer to convert python expressions to strings of Fortran code"""
+    """A printer to convert sympy expressions to strings of Fortran code"""
     printmethod = "_fcode_"
 
     def doprint(self, expr):
@@ -145,7 +145,7 @@ class FCodePrinter(StrPrinter):
 
 
 class StrictFCodePrinter(FCodePrinter):
-    """A printer to convert python expressions to strings of Fortran code"""
+    """A printer to convert sympy expressions to strings of working Fortran code"""
 
     def emptyPrinter(self, expr):
         raise NotImplementedError("Can not print as Fortran code: %s" % expr)
