@@ -96,6 +96,8 @@ class FCodePrinter(StrPrinter):
             name = expr.func.__name__
         return "%s(%s)" % (name, self.stringify(expr.args, ", "))
 
+    _print_Factorial = _print_Function
+
     def _print_ImaginaryUnit(self, expr):
         # purpose: print complex numbers nicely in Fortran.
         return "cmplx(0,1)"
@@ -148,7 +150,6 @@ class StrictFCodePrinter(FCodePrinter):
     _print_dict = emptyPrinter
     _print_Dummy = emptyPrinter
     _print_ExprCondPair = emptyPrinter
-    _print_Factorial = emptyPrinter
     _print_GeometryEntity = emptyPrinter
     _print_Infinity = emptyPrinter
     _print_Integral = emptyPrinter
@@ -182,6 +183,8 @@ class StrictFCodePrinter(FCodePrinter):
             raise NotImplementedError("Function not available in Fortran: %s" % expr)
         else:
             return "%s(%s)" % (name, self.stringify(expr.args, ", "))
+
+    _print_Factorial = _print_Function
 
 
 def fcode(expr, precision=15, user_functions={}, strict=False):

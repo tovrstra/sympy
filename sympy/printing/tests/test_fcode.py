@@ -1,4 +1,5 @@
-from sympy import sin, cos, atan2, gamma, conjugate, Integral, symbols, raises
+from sympy import sin, cos, atan2, gamma, conjugate, Factorial, Integral, \
+    symbols, raises
 from sympy import Catalan, EulerGamma, E, GoldenRatio, I, pi
 from sympy import Function, Rational, Integer
 
@@ -73,7 +74,13 @@ def test_user_functions():
     x = symbols('x')
     assert fcode(sin(x), user_functions={sin: "zsin"}) == "zsin(x)"
     assert fcode(sin(x), user_functions={sin: "zsin"}, strict=True) == "zsin(x)"
+    x = symbols('x')
+    assert fcode(gamma(x), user_functions={gamma: "mygamma"}) == "mygamma(x)"
+    assert fcode(gamma(x), user_functions={gamma: "mygamma"}, strict=True) == "mygamma(x)"
     g = Function('g')
     assert fcode(g(x), user_functions={g: "great"}) == "great(x)"
     assert fcode(g(x), user_functions={g: "great"}, strict=True) == "great(x)"
+    n = symbols('n', integer=True)
+    assert fcode(Factorial(n), user_functions={Factorial: "fct"}) == "fct(n)"
+    assert fcode(Factorial(n), user_functions={Factorial: "fct"}, strict=True) == "fct(n)"
 
