@@ -49,6 +49,13 @@ class FCodePrinter(StrPrinter):
     """A printer to convert python expressions to strings of Fortran code"""
     printmethod = "_fcode_"
 
+    def doprint(self, expr):
+        """Returns Fortran code for expr (as a string)"""
+        result = StrPrinter.doprint(self, expr)
+        if self._settings["assign_to"] is not None:
+            result = "%s = %s" % (self._settings["assign_to"], result)
+        return result
+
     def _print_Add(self, expr):
         # purpose: print complex numbers nicely in Fortran.
         # collect the purely real and purely imaginary parts:
@@ -187,13 +194,16 @@ class StrictFCodePrinter(FCodePrinter):
     _print_Factorial = _print_Function
 
 
-def fcode(expr, precision=15, user_functions={}, strict=False):
+def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False):
     """Converts an expr to a string of Fortran 77 code
 
        Arguments:
          expr  --  a sympy expression to be converted
 
        Optional arguments:
+         assign_to  --  When given, the argument is used as the name of the
+                        variable to which the fortran expression is assigned.
+                        (This is helpfull in case of line-wrapping.)
          precision  --  the precission for numbers such as pi [default=15]
          strict  --  If True, an error is raised if the generated code is not
                      compilable (without making assumptions about the presence
@@ -212,6 +222,7 @@ def fcode(expr, precision=15, user_functions={}, strict=False):
     profile = {
         "full_prec": False, # programmers don't care about trailing zeros.
         "precision": precision,
+        "assign_to": assign_to,
         "user_functions": user_functions,
     }
     if strict:

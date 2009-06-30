@@ -40,7 +40,7 @@ def test_fcode_NumberSymbol():
     assert fcode(E) == '2.71828182845905'
     assert fcode(GoldenRatio) == '1.61803398874989'
     assert fcode(pi) == '3.14159265358979'
-    assert fcode(pi,5) == '3.1416'
+    assert fcode(pi,precision=5) == '3.1416'
 
 def test_fcode_complex():
     assert fcode(I) == "cmplx(0,1)"
@@ -83,4 +83,8 @@ def test_user_functions():
     n = symbols('n', integer=True)
     assert fcode(Factorial(n), user_functions={Factorial: "fct"}) == "fct(n)"
     assert fcode(Factorial(n), user_functions={Factorial: "fct"}, strict=True) == "fct(n)"
+
+def test_assign_to():
+    x = symbols('x')
+    assert fcode(sin(x), assign_to="s") == "s = sin(x)"
 
