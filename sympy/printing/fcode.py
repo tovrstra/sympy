@@ -188,6 +188,9 @@ def fcode(expr, precision=15, strict=False):
 
        Optional arguments:
          precision  --  the precission for numbers such as pi [default=15]
+         strict  --  If True, an error is raised if the generated code is not
+                     compilable (without making assumptions about the presence
+                     of non-standard Fortran functions). [default=False]
 
        >>> from sympy import *
        >>> x, tau = symbols(["x", "tau"])
