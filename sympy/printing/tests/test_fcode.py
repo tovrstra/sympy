@@ -1,4 +1,4 @@
-from sympy import sin, cos, atan2, gamma, integrate, symbols, raises
+from sympy import sin, cos, atan2, gamma, conjugate, Integral, symbols, raises
 from sympy import Catalan, EulerGamma, E, GoldenRatio, I, pi
 from sympy import Function, Rational, Integer
 
@@ -57,8 +57,15 @@ def test_implicit():
     x, y = symbols('xy')
     assert fcode(sin(x)) == "sin(x)"
     assert fcode(atan2(x,y)) == "atan2(x, y)"
-    raises(NotImplementedError, 'fcode(gamma(x))')
-    raises(NotImplementedError, 'fcode(integrate(sin(x)/x,x))')
+    assert fcode(conjugate(x)) == "conjg(x)"
+
+def test_strict():
+    x = symbols('x')
     g = Function('g')
-    raises(NotImplementedError, 'fcode(g(x))')
+    assert fcode(gamma(x)) == "gamma(x)"
+    assert fcode(Integral(sin(x))) == "Integral(sin(x), x)"
+    assert fcode(g(x)) == "g(x)"
+    raises(NotImplementedError, 'fcode(gamma(x), strict=True)')
+    raises(NotImplementedError, 'fcode(Integral(sin(x)), strict=True)')
+    raises(NotImplementedError, 'fcode(g(x), strict=True)')
 

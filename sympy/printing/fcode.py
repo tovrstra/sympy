@@ -44,45 +44,10 @@ implicit_functions = {
     conjugate: "conjg",
 }
 
+
 class FCodePrinter(StrPrinter):
     """A printer to convert python expressions to strings of Fortran code"""
     printmethod = "_fcode_"
-
-    def emptyPrinter(self, expr):
-        raise NotImplementedError("Can not print as Fortran code: %s" % expr)
-
-    # the following can not be simply translated into Fortran.
-    _print_Basic = emptyPrinter
-    _print_ComplexInfinity = emptyPrinter
-    _print_Derivative = emptyPrinter
-    _print_dict = emptyPrinter
-    _print_Dummy = emptyPrinter
-    _print_ExprCondPair = emptyPrinter
-    _print_Factorial = emptyPrinter
-    _print_GeometryEntity = emptyPrinter
-    _print_Infinity = emptyPrinter
-    _print_Integral = emptyPrinter
-    _print_Interval = emptyPrinter
-    _print_Limit = emptyPrinter
-    _print_list = emptyPrinter
-    _print_Matrix = emptyPrinter
-    _print_DeferredVector = emptyPrinter
-    _print_NaN = emptyPrinter
-    _print_NegativeInfinity = emptyPrinter
-    _print_Normal = emptyPrinter
-    _print_Order = emptyPrinter
-    _print_PDF = emptyPrinter
-    _print_Relational = emptyPrinter
-    _print_RootOf = emptyPrinter
-    _print_RootsOf = emptyPrinter
-    _print_RootSum = emptyPrinter
-    _print_Sample = emptyPrinter
-    _print_SMatrix = emptyPrinter
-    _print_tuple = emptyPrinter
-    _print_Uniform = emptyPrinter
-    _print_Unit = emptyPrinter
-    _print_Wild = emptyPrinter
-    _print_WildFunction = emptyPrinter
 
     def _print_Add(self, expr):
         # purpose: print complex numbers nicely in Fortran.
@@ -126,9 +91,8 @@ class FCodePrinter(StrPrinter):
     def _print_Function(self, expr):
         name = implicit_functions.get(expr.__class__)
         if name is None:
-            raise NotImplementedError("Function not available in Fortran: %s" % expr)
-        else:
-            return "%s(%s)" % (name, self.stringify(expr.args, ", "))
+            name = expr.func.__name__
+        return "%s(%s)" % (name, self.stringify(expr.args, ", "))
 
     def _print_ImaginaryUnit(self, expr):
         # purpose: print complex numbers nicely in Fortran.
@@ -169,7 +133,54 @@ class FCodePrinter(StrPrinter):
         return '%d.0/%d.0' % (p, q)
 
 
-def fcode(expr, precision=15):
+class StrictFCodePrinter(FCodePrinter):
+    """A printer to convert python expressions to strings of Fortran code"""
+
+    def emptyPrinter(self, expr):
+        raise NotImplementedError("Can not print as Fortran code: %s" % expr)
+
+    # the following can not be simply translated into Fortran.
+    _print_Basic = emptyPrinter
+    _print_ComplexInfinity = emptyPrinter
+    _print_Derivative = emptyPrinter
+    _print_dict = emptyPrinter
+    _print_Dummy = emptyPrinter
+    _print_ExprCondPair = emptyPrinter
+    _print_Factorial = emptyPrinter
+    _print_GeometryEntity = emptyPrinter
+    _print_Infinity = emptyPrinter
+    _print_Integral = emptyPrinter
+    _print_Interval = emptyPrinter
+    _print_Limit = emptyPrinter
+    _print_list = emptyPrinter
+    _print_Matrix = emptyPrinter
+    _print_DeferredVector = emptyPrinter
+    _print_NaN = emptyPrinter
+    _print_NegativeInfinity = emptyPrinter
+    _print_Normal = emptyPrinter
+    _print_Order = emptyPrinter
+    _print_PDF = emptyPrinter
+    _print_Relational = emptyPrinter
+    _print_RootOf = emptyPrinter
+    _print_RootsOf = emptyPrinter
+    _print_RootSum = emptyPrinter
+    _print_Sample = emptyPrinter
+    _print_SMatrix = emptyPrinter
+    _print_tuple = emptyPrinter
+    _print_Uniform = emptyPrinter
+    _print_Unit = emptyPrinter
+    _print_Wild = emptyPrinter
+    _print_WildFunction = emptyPrinter
+
+    def _print_Function(self, expr):
+        name = implicit_functions.get(expr.__class__)
+        if name is None:
+            raise NotImplementedError("Function not available in Fortran: %s" % expr)
+        else:
+            return "%s(%s)" % (name, self.stringify(expr.args, ", "))
+
+
+def fcode(expr, precision=15, strict=False):
     """Converts an expr to a string of Fortran 77 code
 
        Arguments:
@@ -192,7 +203,10 @@ def fcode(expr, precision=15):
         "full_prec": False, # programmers don't care about trailing zeros.
         "precision": precision,
     }
-    return FCodePrinter(profile).doprint(expr)
+    if strict:
+        return StrictFCodePrinter(profile).doprint(expr)
+    else:
+        return FCodePrinter(profile).doprint(expr)
 
 
 def print_fcode(expr, precision=15):
