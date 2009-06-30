@@ -1,4 +1,5 @@
-from sympy import sin, cos, symbols, Catalan, EulerGamma, E, GoldenRatio, I, pi
+from sympy import sin, cos, atan2, gamma, integrate, symbols, raises
+from sympy import Catalan, EulerGamma, E, GoldenRatio, I, pi
 from sympy import Function, Rational, Integer
 
 from sympy.printing import fcode
@@ -13,11 +14,10 @@ def test_printmethod():
 
 def test_fcode_Pow():
     x, y = symbols('xy')
-    g = Function('g')
     assert fcode(x**3) == "x**3"
     assert fcode(x**(y**3)) == "x**(y**3)"
-    assert fcode(1/(g(x)*3.5)**(x - y**x)/(x**2 + y)) == \
-        "(3.5*g(x))**(-x + y**x)/(y + x**2)"
+    assert fcode(1/(sin(x)*3.5)**(x - y**x)/(x**2 + y)) == \
+        "(3.5*sin(x))**(-x + y**x)/(y + x**2)"
 
 def test_fcode_Rational():
     assert fcode(Rational(3,7)) == "3.0/7.0"
@@ -52,4 +52,13 @@ def test_fcode_complex():
     x = symbols('x', imaginary=True)
     assert fcode(5*x) == "5*x"
     assert fcode(I*x) == "cmplx(0,1)*x"
+
+def test_implicit():
+    x, y = symbols('xy')
+    assert fcode(sin(x)) == "sin(x)"
+    assert fcode(atan2(x,y)) == "atan2(x, y)"
+    raises(NotImplementedError, 'fcode(gamma(x))')
+    raises(NotImplementedError, 'fcode(integrate(sin(x)/x,x))')
+    g = Function('g')
+    raises(NotImplementedError, 'fcode(g(x))')
 

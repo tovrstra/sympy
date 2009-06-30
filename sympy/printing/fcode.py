@@ -21,11 +21,68 @@ responsibility for generating properly cased Fortran code to the user.
 from str import StrPrinter
 from sympy.printing.precedence import precedence
 from sympy.core import S, Add, I
+from sympy.functions import sin, cos, tan, asin, acos, atan, atan2, sinh, \
+    cosh, tanh, sqrt, log, exp, abs, sign, conjugate
 
+
+implicit_functions = {
+    sin: "sin",
+    cos: "cos",
+    tan: "tan",
+    asin: "asin",
+    acos: "acos",
+    atan: "atan",
+    atan2: "atan2",
+    sinh: "sinh",
+    cosh: "cosh",
+    tanh: "tanh",
+    sqrt: "sqrt",
+    log: "log",
+    exp: "exp",
+    abs: "abs",
+    sign: "sign",
+    conjugate: "conjg",
+}
 
 class FCodePrinter(StrPrinter):
     """A printer to convert python expressions to strings of Fortran code"""
     printmethod = "_fcode_"
+
+    def emptyPrinter(self, expr):
+        raise NotImplementedError("Can not print as Fortran code: %s" % expr)
+
+    # the following can not be simply translated into Fortran.
+    _print_Basic = emptyPrinter
+    _print_ComplexInfinity = emptyPrinter
+    _print_Derivative = emptyPrinter
+    _print_dict = emptyPrinter
+    _print_Dummy = emptyPrinter
+    _print_ExprCondPair = emptyPrinter
+    _print_Factorial = emptyPrinter
+    _print_GeometryEntity = emptyPrinter
+    _print_Infinity = emptyPrinter
+    _print_Integral = emptyPrinter
+    _print_Interval = emptyPrinter
+    _print_Limit = emptyPrinter
+    _print_list = emptyPrinter
+    _print_Matrix = emptyPrinter
+    _print_DeferredVector = emptyPrinter
+    _print_NaN = emptyPrinter
+    _print_NegativeInfinity = emptyPrinter
+    _print_Normal = emptyPrinter
+    _print_Order = emptyPrinter
+    _print_PDF = emptyPrinter
+    _print_Relational = emptyPrinter
+    _print_RootOf = emptyPrinter
+    _print_RootsOf = emptyPrinter
+    _print_RootSum = emptyPrinter
+    _print_Sample = emptyPrinter
+    _print_SMatrix = emptyPrinter
+    _print_tuple = emptyPrinter
+    _print_Uniform = emptyPrinter
+    _print_Unit = emptyPrinter
+    _print_Wild = emptyPrinter
+    _print_WildFunction = emptyPrinter
 
     def _print_Add(self, expr):
         # purpose: print complex numbers nicely in Fortran.
@@ -66,9 +123,19 @@ class FCodePrinter(StrPrinter):
         else:
             return StrPrinter._print_Add(self, expr)
 
+    def _print_Function(self, expr):
+        name = implicit_functions.get(expr.__class__)
+        if name is None:
+            raise NotImplementedError("Function not available in Fortran: %s" % expr)
+        else:
+            return "%s(%s)" % (name, self.stringify(expr.args, ", "))
+
     def _print_ImaginaryUnit(self, expr):
         # purpose: print complex numbers nicely in Fortran.
         return "cmplx(0,1)"
+
+    def _print_int(self, expr):
+        return str(expr)
 
     def _print_Mul(self, expr):
         # purpose: print complex numbers nicely in Fortran.
