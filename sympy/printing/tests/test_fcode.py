@@ -1,4 +1,4 @@
-from sympy import sin, cos, symbols, Catalan, EulerGamma, E, GoldenRatio, pi
+from sympy import sin, cos, symbols, Catalan, EulerGamma, E, GoldenRatio, I, pi
 from sympy import Function, Rational, Integer
 
 from sympy.printing import fcode
@@ -41,4 +41,15 @@ def test_fcode_NumberSymbol():
     assert fcode(pi) == '3.14159265358979'
     assert fcode(pi,5) == '3.1416'
 
+def test_fcode_complex():
+    assert fcode(I) == "cmplx(0,1)"
+    x = symbols('x')
+    assert fcode(4*I) == "cmplx(0,4)"
+    assert fcode(3+4*I) == "cmplx(3,4)"
+    assert fcode(3+4*I+x) == "cmplx(3,4) + x"
+    assert fcode(I*x) == "cmplx(0,1)*x"
+    assert fcode(3+4*I-x) == "cmplx(3,4) - x"
+    x = symbols('x', imaginary=True)
+    assert fcode(5*x) == "5*x"
+    assert fcode(I*x) == "cmplx(0,1)*x"
 

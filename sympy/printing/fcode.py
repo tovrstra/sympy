@@ -19,20 +19,65 @@ responsibility for generating properly cased Fortran code to the user.
 
 
 from str import StrPrinter
-from sympy.printing.precedence import precedence, PRECEDENCE
-from sympy.core.basic import S
+from sympy.printing.precedence import precedence
+from sympy.core import S, Add, I
 
 
 class FCodePrinter(StrPrinter):
     """A printer to convert python expressions to strings of Fortran code"""
     printmethod = "_fcode_"
 
-    def _print_Pow(self, expr):
-        PREC = precedence(expr)
-        if expr.exp is S.NegativeOne:
-            return '1.0/%s'%(self.parenthesize(expr.base, PREC))
+    def _print_Add(self, expr):
+        # purpose: print complex numbers nicely in Fortran.
+        # collect the purely real and purely imaginary parts:
+        pure_real = []
+        pure_imaginary = []
+        mixed = []
+        for arg in expr.args:
+            if arg.is_real and arg.is_number:
+                pure_real.append(arg)
+            elif arg.is_imaginary and arg.is_number:
+                pure_imaginary.append(arg)
+            else:
+                mixed.append(arg)
+        if len(pure_real) > 0 or len(pure_imaginary) > 0:
+            if len(mixed) > 0:
+                PREC = precedence(expr)
+                term = Add(*mixed)
+                t = self._print(term)
+                if t.startswith('-'):
+                    sign = "-"
+                    t = t[1:]
+                else:
+                    sign = "+"
+                if precedence(term) < PREC:
+                    t = "(%s)" % t
+
+                return "cmplx(%s,%s) %s %s" % (
+                    self._print(Add(*pure_real)),
+                    self._print(-I*Add(*pure_imaginary)),
+                    sign, t,
+                )
+            else:
+                return "cmplx(%s,%s)" % (
+                    self._print(Add(*pure_real)),
+                    self._print(-I*Add(*pure_imaginary)),
+                )
         else:
-            return StrPrinter._print_Pow(self, expr)
+            return StrPrinter._print_Add(self, expr)
+
+    def _print_ImaginaryUnit(self, expr):
+        # purpose: print complex numbers nicely in Fortran.
+        return "cmplx(0,1)"
+
+    def _print_Mul(self, expr):
+        # purpose: print complex numbers nicely in Fortran.
+        if expr.is_imaginary and expr.is_number:
+            return "cmplx(0,%s)" % (
+                self._print(-I*expr)
+            )
+        else:
+            return StrPrinter._print_Mul(self, expr)
 
     def _print_NumberSymbol(self, expr):
         # Standard Fortran has no predefined constants. Therefor NumerSymbols
@@ -44,6 +89,13 @@ class FCodePrinter(StrPrinter):
     _print_Exp1 = _print_NumberSymbol
     _print_GoldenRatio = _print_NumberSymbol
     _print_Pi = _print_NumberSymbol
+
+    def _print_Pow(self, expr):
+        PREC = precedence(expr)
+        if expr.exp is S.NegativeOne:
+            return '1.0/%s'%(self.parenthesize(expr.base, PREC))
+        else:
+            return StrPrinter._print_Pow(self, expr)
 
     def _print_Rational(self, expr):
         p, q = int(expr.p), int(expr.q)
