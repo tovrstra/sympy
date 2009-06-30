@@ -52,9 +52,22 @@ class FCodePrinter(StrPrinter):
     def doprint(self, expr):
         """Returns Fortran code for expr (as a string)"""
         result = StrPrinter.doprint(self, expr)
+        # turn the result into an assignment
         if self._settings["assign_to"] is not None:
             result = "%s = %s" % (self._settings["assign_to"], result)
-        return result
+        # good old fortran line wrapping ;-)
+        todo = result
+        result = []
+        while len(todo) > 0:
+            if len(result) == 0:
+                hunk = todo[:66]
+                todo = todo[66:]
+                result.append("      %s" % hunk)
+            else:
+                hunk = todo[:62]
+                todo = todo[62:]
+                result.append("     @    %s" % hunk)
+        return "\n".join(result)
 
     def _print_Add(self, expr):
         # purpose: print complex numbers nicely in Fortran.
