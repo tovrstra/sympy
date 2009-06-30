@@ -69,3 +69,11 @@ def test_strict():
     raises(NotImplementedError, 'fcode(Integral(sin(x)), strict=True)')
     raises(NotImplementedError, 'fcode(g(x), strict=True)')
 
+def test_user_functions():
+    x = symbols('x')
+    assert fcode(sin(x), user_functions={sin: "zsin"}) == "zsin(x)"
+    assert fcode(sin(x), user_functions={sin: "zsin"}, strict=True) == "zsin(x)"
+    g = Function('g')
+    assert fcode(g(x), user_functions={g: "great"}) == "great(x)"
+    assert fcode(g(x), user_functions={g: "great"}, strict=True) == "great(x)"
+

@@ -89,7 +89,9 @@ class FCodePrinter(StrPrinter):
             return StrPrinter._print_Add(self, expr)
 
     def _print_Function(self, expr):
-        name = implicit_functions.get(expr.__class__)
+        name = self._settings["user_functions"].get(expr.__class__)
+        if name is None:
+            name = implicit_functions.get(expr.__class__)
         if name is None:
             name = expr.func.__name__
         return "%s(%s)" % (name, self.stringify(expr.args, ", "))
@@ -173,14 +175,16 @@ class StrictFCodePrinter(FCodePrinter):
     _print_WildFunction = emptyPrinter
 
     def _print_Function(self, expr):
-        name = implicit_functions.get(expr.__class__)
+        name = self._settings["user_functions"].get(expr.__class__)
+        if name is None:
+            name = implicit_functions.get(expr.__class__)
         if name is None:
             raise NotImplementedError("Function not available in Fortran: %s" % expr)
         else:
             return "%s(%s)" % (name, self.stringify(expr.args, ", "))
 
 
-def fcode(expr, precision=15, strict=False):
+def fcode(expr, precision=15, user_functions={}, strict=False):
     """Converts an expr to a string of Fortran 77 code
 
        Arguments:
@@ -205,6 +209,7 @@ def fcode(expr, precision=15, strict=False):
     profile = {
         "full_prec": False, # programmers don't care about trailing zeros.
         "precision": precision,
+        "user_functions": user_functions,
     }
     if strict:
         return StrictFCodePrinter(profile).doprint(expr)
