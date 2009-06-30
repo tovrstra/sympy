@@ -226,11 +226,11 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False):
        >>> x, tau = symbols(["x", "tau"])
 
        >>> fcode((2*tau)**Rational(7,2))
-       '8*2**(1.0/2.0)*tau**(7.0/2.0)'
-       >>> fcode(sin(x))
-       'sin(x)'
+       '      8*2**(1.0/2.0)*tau**(7.0/2.0)'
+       >>> fcode(sin(x), assign_to="s")
+       '      s = sin(x)'
        >>> fcode(pi)
-       '3.14159265358979'
+       '      3.14159265358979'
     """
     profile = {
         "full_prec": False, # programmers don't care about trailing zeros.
