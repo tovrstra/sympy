@@ -7,7 +7,7 @@ possible. Some useful pointers to Fortran can be found on wikipedia:
 
 http://en.wikipedia.org/wiki/Fortran
 
-Most of the code below is based on the "Professional Programmer's Guide to
+Most of the code below is based on the "Professional Programmer\'s Guide to
 Fortran77" by Clive G. Page:
 
 http://www.star.le.ac.uk/~cgp/prof77.html
