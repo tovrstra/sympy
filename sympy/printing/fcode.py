@@ -233,6 +233,8 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False):
                         variable to which the fortran expression is assigned.
                         (This is helpfull in case of line-wrapping.)
          precision  --  the precission for numbers such as pi [default=15]
+         user_functions  --  A dictionary where keys are FuncionClass instances
+                             and values are there string representations.
          strict  --  If True, an error is raised if the generated code is not
                      compilable (without making assumptions about the presence
                      of non-standard Fortran functions). [default=False]
