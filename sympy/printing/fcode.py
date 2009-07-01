@@ -22,7 +22,7 @@ from str import StrPrinter
 from sympy.printing.precedence import precedence
 from sympy.core import S, Add, I
 from sympy.functions import sin, cos, tan, asin, acos, atan, atan2, sinh, \
-    cosh, tanh, sqrt, log, exp, abs, sign, conjugate
+    cosh, tanh, sqrt, log, exp, abs, sign, conjugate, Piecewise
 
 
 implicit_functions = {
@@ -51,23 +51,38 @@ class FCodePrinter(StrPrinter):
 
     def doprint(self, expr):
         """Returns Fortran code for expr (as a string)"""
-        result = StrPrinter.doprint(self, expr)
-        # turn the result into an assignment
-        if self._settings["assign_to"] is not None:
-            result = "%s = %s" % (self._settings["assign_to"], result)
+        lines = []
+        if isinstance(expr, Piecewise):
+            # support for top-level Piecewise function
+            for i, (e, c) in enumerate(expr.args):
+                if i == 0:
+                    lines.append("if (%s) then" % self._print(c))
+                elif i == len(expr.args)-1 and c == True:
+                    lines.append("else")
+                else:
+                    lines.append("else if (%s) then" % self._print(c))
+                if self._settings["assign_to"] is None:
+                    lines.append("  %s" % self._print(e))
+                else:
+                    lines.append("  %s = %s" % (self._settings["assign_to"], self._print(e)))
+            lines.append("end if")
+        else:
+            line = StrPrinter.doprint(self, expr)
+            # turn the result into an assignment
+            if self._settings["assign_to"] is not None:
+                line = "%s = %s" % (self._settings["assign_to"], line)
+            lines.append(line)
         # good old fortran line wrapping ;-)
-        todo = result
-        result = []
-        while len(todo) > 0:
-            if len(result) == 0:
-                hunk = todo[:66]
-                todo = todo[66:]
-                result.append("      %s" % hunk)
-            else:
-                hunk = todo[:62]
-                todo = todo[62:]
-                result.append("     @    %s" % hunk)
-        return "\n".join(result)
+        wrapped_lines = []
+        for line in lines:
+            hunk = line[:66]
+            line = line[66:]
+            wrapped_lines.append("      %s" % hunk)
+            while len(line) > 0:
+                hunk = line[:62]
+                line = line[62:]
+                wrapped_lines.append("     @    %s" % hunk)
+        return "\n".join(wrapped_lines)
 
     def _print_Add(self, expr):
         # purpose: print complex numbers nicely in Fortran.

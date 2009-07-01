@@ -1,5 +1,5 @@
 from sympy import sin, cos, atan2, gamma, conjugate, Factorial, Integral, \
-    symbols, raises
+    Piecewise, diff, symbols, raises
 from sympy import Catalan, EulerGamma, E, GoldenRatio, I, pi
 from sympy import Function, Rational, Integer
 
@@ -94,4 +94,57 @@ def test_line_wrapping():
         "      var = 45*x**8*y**2 + 120*x**7*y**3 + 210*x**6*y**4 + 252*x**5*y**5\n"\
         "     @     + 210*x**4*y**6 + 120*x**3*y**7 + 45*x**2*y**8 + 10*x*y**9 + \n"\
         "     @    10*y*x**9 + x**10 + y**10"
+
+def test_fcode_Piecewise():
+    x = symbols('x')
+    assert fcode(Piecewise((x,x<1),(x**2,True))) == (
+        "      if (x < 1) then\n"
+        "        x\n"
+        "      else\n"
+        "        x**2\n"
+        "      end if"
+    )
+    assert fcode(Piecewise((x,x<1),(x**2,True)), assign_to="var") == (
+        "      if (x < 1) then\n"
+        "        var = x\n"
+        "      else\n"
+        "        var = x**2\n"
+        "      end if"
+    )
+    a = cos(x)/x
+    b = sin(x)/x
+    for i in xrange(10):
+        a = diff(a, x)
+        b = diff(b, x)
+    assert fcode(Piecewise((a,x<0),(b,True)), assign_to="weird_name") == (
+        "      if (x < 0) then\n"
+        "        weird_name = -cos(x)/x - 1814400*cos(x)/x**9 - 604800*sin(x)/x**\n"
+        "     @    8 - 5040*cos(x)/x**5 - 720*sin(x)/x**4 + 10*sin(x)/x**2 + 90*c\n"
+        "     @    os(x)/x**3 + 30240*sin(x)/x**6 + 151200*cos(x)/x**7 + 3628800*\n"
+        "     @    cos(x)/x**11 + 3628800*sin(x)/x**10\n"
+        "      else\n"
+        "        weird_name = -sin(x)/x - 3628800*cos(x)/x**10 - 1814400*sin(x)/x\n"
+        "     @    **9 - 30240*cos(x)/x**6 - 5040*sin(x)/x**5 - 10*cos(x)/x**2 + \n"
+        "     @    90*sin(x)/x**3 + 720*cos(x)/x**4 + 151200*sin(x)/x**7 + 604800\n"
+        "     @    *cos(x)/x**8 + 3628800*sin(x)/x**11\n"
+        "      end if"
+    )
+    assert fcode(Piecewise((x,x<1),(x**2,x>1),(sin(x),True))) == (
+        "      if (x < 1) then\n"
+        "        x\n"
+        "      else if (1 < x) then\n"
+        "        x**2\n"
+        "      else\n"
+        "        sin(x)\n"
+        "      end if"
+    )
+    assert fcode(Piecewise((x,x<1),(x**2,x>1),(sin(x),x>0))) == (
+        "      if (x < 1) then\n"
+        "        x\n"
+        "      else if (1 < x) then\n"
+        "        x**2\n"
+        "      else if (0 < x) then\n"
+        "        sin(x)\n"
+        "      end if"
+    )
 
