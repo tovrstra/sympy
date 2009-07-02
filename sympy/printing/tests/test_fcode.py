@@ -1,5 +1,5 @@
-from sympy import sin, cos, atan2, gamma, conjugate, Factorial, Integral, \
-    Piecewise, diff, symbols, raises
+from sympy import sin, cos, atan2, gamma, conjugate, sqrt, Factorial, \
+    Integral, Piecewise, diff, symbols, raises
 from sympy import Catalan, EulerGamma, E, GoldenRatio, I, pi
 from sympy import Function, Rational, Integer
 
@@ -19,6 +19,9 @@ def test_fcode_Pow():
     assert fcode(x**(y**3)) == "      x**(y**3)"
     assert fcode(1/(sin(x)*3.5)**(x - y**x)/(x**2 + y)) == \
         "      (3.5*sin(x))**(-x + y**x)/(y + x**2)"
+    assert fcode(sqrt(x)) == '      sqrt(x)'
+    assert fcode(x**0.5) == '      sqrt(x)'
+    assert fcode(x**Rational(1,2)) == '      sqrt(x)'
 
 def test_fcode_Rational():
     assert fcode(Rational(3,7)) == "      3.0/7.0"
