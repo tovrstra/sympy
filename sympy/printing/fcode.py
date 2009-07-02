@@ -282,7 +282,10 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False, h
         return number_symbols, result
 
 
-def print_fcode(expr, precision=15):
-    """Prints the Fortran representation of the given expression."""
-    print fcode(expr, precision)
+def print_fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False):
+    """Prints the Fortran representation of the given expression.
+
+       See fcode for the meaning of the optional arguments.
+    """
+    print fcode(expr, assign_to, precision, user_functions, strict)
 
