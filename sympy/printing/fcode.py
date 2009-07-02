@@ -21,8 +21,10 @@ responsibility for generating properly cased Fortran code to the user.
 from str import StrPrinter
 from sympy.printing.precedence import precedence
 from sympy.core import S, Add, I
+from sympy.core.numbers import NumberSymbol
 from sympy.functions import sin, cos, tan, asin, acos, atan, atan2, sinh, \
     cosh, tanh, sqrt, log, exp, abs, sign, conjugate, Piecewise
+from sympy.utilities.iterables import postorder_traversal
 
 
 implicit_functions = {
@@ -152,7 +154,7 @@ class FCodePrinter(StrPrinter):
     def _print_NumberSymbol(self, expr):
         # Standard Fortran has no predefined constants. Therefor NumerSymbols
         # are evaluated.
-        return str(expr.evalf(self._settings["precision"]))
+        return str(expr)
 
     _print_Catalan = _print_NumberSymbol
     _print_EulerGamma = _print_NumberSymbol
@@ -222,7 +224,7 @@ class StrictFCodePrinter(FCodePrinter):
     _print_Factorial = _print_Function
 
 
-def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False):
+def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False, human=True):
     """Converts an expr to a string of Fortran 77 code
 
        Arguments:
@@ -238,6 +240,10 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False):
          strict  --  If True, an error is raised if the generated code is not
                      compilable (without making assumptions about the presence
                      of non-standard Fortran functions). [default=False]
+         human  --  If True, the result is a single string that may contain
+                    some PARAMETER statements for the numer symbols. If
+                    False, the same information is returned in a more
+                    programmer-friendly data structure.
 
        >>> from sympy import *
        >>> x, tau = symbols(["x", "tau"])
@@ -246,19 +252,34 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False):
        '      8*2**(1.0/2.0)*tau**(7.0/2.0)'
        >>> fcode(sin(x), assign_to="s")
        '      s = sin(x)'
-       >>> fcode(pi)
-       '      3.14159265358979'
+       >>> print fcode(pi)
+             parameter (pi = 3.14159265358979)
+             pi
+
     """
+    # find all number symbols
+    number_symbols = set([])
+    for sub in postorder_traversal(expr):
+        if isinstance(sub, NumberSymbol):
+            number_symbols.add(sub)
+    number_symbols = [(str(ns), ns.evalf(precision)) for ns in sorted(number_symbols)]
+    # run the printer
     profile = {
         "full_prec": False, # programmers don't care about trailing zeros.
-        "precision": precision,
         "assign_to": assign_to,
         "user_functions": user_functions,
     }
     if strict:
-        return StrictFCodePrinter(profile).doprint(expr)
+        result = StrictFCodePrinter(profile).doprint(expr)
     else:
-        return FCodePrinter(profile).doprint(expr)
+        result = FCodePrinter(profile).doprint(expr)
+    if human:
+        result = "".join(
+            "      parameter (%s = %s)\n" % (name, value) for name, value in number_symbols
+        ) + result
+        return result
+    else:
+        return number_symbols, result
 
 
 def print_fcode(expr, precision=15):

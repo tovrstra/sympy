@@ -35,12 +35,18 @@ def test_fcode_functions():
     assert fcode(sin(x) ** cos(y)) == "      sin(x)**cos(y)"
 
 def test_fcode_NumberSymbol():
-    assert fcode(Catalan) == '      0.915965594177219'
-    assert fcode(EulerGamma) == '      0.577215664901533'
-    assert fcode(E) == '      2.71828182845905'
-    assert fcode(GoldenRatio) == '      1.61803398874989'
-    assert fcode(pi) == '      3.14159265358979'
-    assert fcode(pi,precision=5) == '      3.1416'
+    assert fcode(Catalan) == '      parameter (Catalan = 0.915965594177219)\n      Catalan'
+    assert fcode(EulerGamma) == '      parameter (EulerGamma = 0.577215664901533)\n      EulerGamma'
+    assert fcode(E) == '      parameter (E = 2.71828182845905)\n      E'
+    assert fcode(GoldenRatio) == '      parameter (GoldenRatio = 1.61803398874989)\n      GoldenRatio'
+    assert fcode(pi) == '      parameter (pi = 3.14159265358979)\n      pi'
+    assert fcode(pi,precision=5) == '      parameter (pi = 3.1416)\n      pi'
+    assert fcode(Catalan,human=False) == ([('Catalan', Catalan.evalf(15))], '      Catalan')
+    assert fcode(EulerGamma,human=False) == ([('EulerGamma', EulerGamma.evalf(15))], '      EulerGamma')
+    assert fcode(E,human=False) == ([('E', E.evalf(15))], '      E')
+    assert fcode(GoldenRatio,human=False) == ([('GoldenRatio', GoldenRatio.evalf(15))], '      GoldenRatio')
+    assert fcode(pi,human=False) == ([('pi', pi.evalf(15))], '      pi')
+    assert fcode(pi,precision=5,human=False) == ([('pi', pi.evalf(5))], '      pi')
 
 def test_fcode_complex():
     assert fcode(I) == "      cmplx(0,1)"
