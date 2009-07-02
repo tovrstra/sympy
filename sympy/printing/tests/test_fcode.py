@@ -62,6 +62,7 @@ def test_fcode_complex():
     x = symbols('x', imaginary=True)
     assert fcode(5*x) == "      5*x"
     assert fcode(I*x) == "      cmplx(0,1)*x"
+    assert fcode(3+x) == "      3 + x"
 
 def test_implicit():
     x, y = symbols('xy')

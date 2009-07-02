@@ -99,7 +99,7 @@ class FCodePrinter(StrPrinter):
                 pure_imaginary.append(arg)
             else:
                 mixed.append(arg)
-        if len(pure_real) > 0 or len(pure_imaginary) > 0:
+        if len(pure_imaginary) > 0:
             if len(mixed) > 0:
                 PREC = precedence(expr)
                 term = Add(*mixed)
