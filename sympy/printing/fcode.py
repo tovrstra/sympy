@@ -250,7 +250,7 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False, h
        >>> from sympy import *
        >>> x, tau = symbols(["x", "tau"])
        >>> fcode((2*tau)**Rational(7,2))
-       '      8*2**(1.0/2.0)*tau**(7.0/2.0)'
+       '      8*sqrt(2)*tau**(7.0/2.0)'
        >>> fcode(sin(x), assign_to="s")
        '      s = sin(x)'
        >>> print fcode(pi)
