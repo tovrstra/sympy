@@ -67,8 +67,11 @@ def test_fcode_complex():
 def test_implicit():
     x, y = symbols('xy')
     assert fcode(sin(x)) == "      sin(x)"
+    assert fcode(sin(x), strict=True) == "      sin(x)"
     assert fcode(atan2(x,y)) == "      atan2(x, y)"
+    assert fcode(atan2(x,y), strict=True) == "      atan2(x, y)"
     assert fcode(conjugate(x)) == "      conjg(x)"
+    assert fcode(conjugate(x), strict=True) == "      conjg(x)"
 
 def test_strict():
     x = symbols('x')

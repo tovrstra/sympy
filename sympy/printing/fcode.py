@@ -27,26 +27,6 @@ from sympy.functions import sin, cos, tan, asin, acos, atan, atan2, sinh, \
 from sympy.utilities.iterables import postorder_traversal
 
 
-implicit_functions = {
-    sin: "sin",
-    cos: "cos",
-    tan: "tan",
-    asin: "asin",
-    acos: "acos",
-    atan: "atan",
-    atan2: "atan2",
-    sinh: "sinh",
-    cosh: "cosh",
-    tanh: "tanh",
-    sqrt: "sqrt",
-    log: "log",
-    exp: "exp",
-    abs: "abs",
-    sign: "sign",
-    conjugate: "conjg",
-}
-
-
 class FCodePrinter(StrPrinter):
     """A printer to convert sympy expressions to strings of Fortran code"""
     printmethod = "_fcode_"
@@ -128,9 +108,10 @@ class FCodePrinter(StrPrinter):
     def _print_Function(self, expr):
         name = self._settings["user_functions"].get(expr.__class__)
         if name is None:
-            name = implicit_functions.get(expr.__class__)
-        if name is None:
-            name = expr.func.__name__
+            if expr.func == conjugate:
+                name = "conjg"
+            else:
+                name = expr.func.__name__
         return "%s(%s)" % (name, self.stringify(expr.args, ", "))
 
     _print_Factorial = _print_Function
@@ -176,6 +157,12 @@ class FCodePrinter(StrPrinter):
         return '%d.0/%d.0' % (p, q)
 
 
+implicit_functions = set([
+    sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, sqrt, log, exp,
+    abs, sign, conjugate
+])
+
+
 class StrictFCodePrinter(FCodePrinter):
     """A printer to convert sympy expressions to strings of working Fortran code"""
 
@@ -216,8 +203,11 @@ class StrictFCodePrinter(FCodePrinter):
 
     def _print_Function(self, expr):
         name = self._settings["user_functions"].get(expr.__class__)
-        if name is None:
-            name = implicit_functions.get(expr.__class__)
+        if name is None and expr.func in implicit_functions:
+            if expr.func == conjugate:
+                name = "conjg"
+            else:
+                name = expr.func.__name__
         if name is None:
             raise NotImplementedError("Function not available in Fortran: %s" % expr)
         else:
