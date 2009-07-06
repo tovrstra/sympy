@@ -1,9 +1,9 @@
 from sympy import sin, cos, atan2, gamma, conjugate, sqrt, Factorial, \
-    Integral, Piecewise, diff, symbols, raises
+    Integral, Piecewise, Add, diff, symbols, raises
 from sympy import Catalan, EulerGamma, E, GoldenRatio, I, pi
 from sympy import Function, Rational, Integer
 
-from sympy.printing import fcode
+from sympy.printing.fcode import fcode, wrap_fortran
 
 
 def test_printmethod():
@@ -93,10 +93,16 @@ def test_assign_to():
 
 def test_line_wrapping():
     x, y = symbols('xy')
-    assert fcode(((x+y)**10).expand(), assign_to="var") == \
-        "      var = 45*x**8*y**2 + 120*x**7*y**3 + 210*x**6*y**4 + 252*x**5*y**5\n"\
-        "     @     + 210*x**4*y**6 + 120*x**3*y**7 + 45*x**2*y**8 + 10*x*y**9 + \n"\
-        "     @    10*y*x**9 + x**10 + y**10"
+    assert fcode(((x+y)**10).expand(), assign_to="var") == (
+        "      var = 45*x**8*y**2 + 120*x**7*y**3 + 210*x**6*y**4 + 252*x**5*y**5\n"
+        "     @ + 210*x**4*y**6 + 120*x**3*y**7 + 45*x**2*y**8 + 10*x*y**9 + 10*y\n"
+        "     @ *x**9 + x**10 + y**10"
+    )
+    e = [x**i for i in range(11)]
+    assert fcode(Add(*e)) == (
+        "      1 + x + x**2 + x**3 + x**4 + x**5 + x**6 + x**7 + x**8 + x**9 + x\n"
+        "     @ **10"
+    )
 
 def test_fcode_Piecewise():
     x = symbols('x')
@@ -121,15 +127,15 @@ def test_fcode_Piecewise():
         b = diff(b, x)
     assert fcode(Piecewise((a,x<0),(b,True)), assign_to="weird_name") == (
         "      if (x < 0) then\n"
-        "        weird_name = -cos(x)/x - 1814400*cos(x)/x**9 - 604800*sin(x)/x**\n"
-        "     @    8 - 5040*cos(x)/x**5 - 720*sin(x)/x**4 + 10*sin(x)/x**2 + 90*c\n"
-        "     @    os(x)/x**3 + 30240*sin(x)/x**6 + 151200*cos(x)/x**7 + 3628800*\n"
-        "     @    cos(x)/x**11 + 3628800*sin(x)/x**10\n"
+        "        weird_name = -cos(x)/x - 1814400*cos(x)/x**9 - 604800*sin(x)/x\n"
+        "     @ **8 - 5040*cos(x)/x**5 - 720*sin(x)/x**4 + 10*sin(x)/x**2 + 90*\n"
+        "     @ cos(x)/x**3 + 30240*sin(x)/x**6 + 151200*cos(x)/x**7 + 3628800*\n"
+        "     @ cos(x)/x**11 + 3628800*sin(x)/x**10\n"
         "      else\n"
         "        weird_name = -sin(x)/x - 3628800*cos(x)/x**10 - 1814400*sin(x)/x\n"
-        "     @    **9 - 30240*cos(x)/x**6 - 5040*sin(x)/x**5 - 10*cos(x)/x**2 + \n"
-        "     @    90*sin(x)/x**3 + 720*cos(x)/x**4 + 151200*sin(x)/x**7 + 604800\n"
-        "     @    *cos(x)/x**8 + 3628800*sin(x)/x**11\n"
+        "     @ **9 - 30240*cos(x)/x**6 - 5040*sin(x)/x**5 - 10*cos(x)/x**2 + 90*\n"
+        "     @ sin(x)/x**3 + 720*cos(x)/x**4 + 151200*sin(x)/x**7 + 604800*cos(x\n"
+        "     @ )/x**8 + 3628800*sin(x)/x**11\n"
         "      end if"
     )
     assert fcode(Piecewise((x,x<1),(x**2,x>1),(sin(x),True))) == (
@@ -150,4 +156,62 @@ def test_fcode_Piecewise():
         "        sin(x)\n"
         "      end if"
     )
+
+def test_wrap_fortran():
+    #   "########################################################################"
+    lines = [
+        "C     This is a long comment on a single line that must be wrapped properly",
+        "      this = is + a + long + and + nasty + fortran + statement + that * must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +  that * must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +   that * must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement + that*must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +   that*must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +    that*must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +     that*must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement + that**must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +  that**must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +   that**must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +    that**must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +     that**must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement(that)/must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran +     statement(that)/must + be + wrapped + properly",
+    ]
+    wrapped_lines = wrap_fortran(lines)
+    expected_lines = [
+        "C     This is a long comment on a single line that must be wrapped",
+        "C     properly",
+        "      this = is + a + long + and + nasty + fortran + statement + that *",
+        "     @ must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +  that *",
+        "     @ must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +   that",
+        "     @ * must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement + that*",
+        "     @ must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +   that*",
+        "     @ must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +    that",
+        "     @ *must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +",
+        "     @ that*must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement + that**",
+        "     @ must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +  that**",
+        "     @ must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +   that",
+        "     @ **must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +    that",
+        "     @ **must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement +",
+        "     @ that**must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran + statement(that)/",
+        "     @ must + be + wrapped + properly",
+        "      this = is + a + long + and + nasty + fortran +     statement(that)",
+        "     @ /must + be + wrapped + properly",
+    ]
+    for line in wrapped_lines:
+        assert len(line) <= 72
+    for w, e in zip(wrapped_lines, expected_lines):
+        assert w == e
+    assert len(wrapped_lines) == len(expected_lines)
 
