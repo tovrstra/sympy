@@ -27,12 +27,22 @@ from sympy.functions import sin, cos, tan, asin, acos, atan, atan2, sinh, \
 from sympy.utilities.iterables import postorder_traversal
 
 
+implicit_functions = set([
+    sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, sqrt, log, exp,
+    abs, sign, conjugate
+])
+
+
 class FCodePrinter(StrPrinter):
     """A printer to convert sympy expressions to strings of Fortran code"""
     printmethod = "_fcode_"
 
     def doprint(self, expr):
         """Returns Fortran code for expr (as a string)"""
+        # keep a set of expressions that are not strictly translatable to
+        # Fortran.
+        self.not_fortran = set([])
+
         lines = []
         if isinstance(expr, Piecewise):
             # support for top-level Piecewise function
@@ -112,6 +122,8 @@ class FCodePrinter(StrPrinter):
                 name = "conjg"
             else:
                 name = expr.func.__name__
+            if expr.func not in implicit_functions:
+                self.not_fortran.add(expr)
         return "%s(%s)" % (name, self.stringify(expr.args, ", "))
 
     _print_Factorial = _print_Function
@@ -156,67 +168,43 @@ class FCodePrinter(StrPrinter):
         p, q = int(expr.p), int(expr.q)
         return '%d.0/%d.0' % (p, q)
 
-
-implicit_functions = set([
-    sin, cos, tan, asin, acos, atan, atan2, sinh, cosh, tanh, sqrt, log, exp,
-    abs, sign, conjugate
-])
-
-
-class StrictFCodePrinter(FCodePrinter):
-    """A printer to convert sympy expressions to strings of working Fortran code"""
-
-    def emptyPrinter(self, expr):
-        raise NotImplementedError("Can not print as Fortran code: %s" % expr)
+    def _print_not_fortran(self, expr):
+        self.not_fortran.add(expr)
+        return StrPrinter.emptyPrinter(self, expr)
 
     # the following can not be simply translated into Fortran.
-    _print_Basic = emptyPrinter
-    _print_ComplexInfinity = emptyPrinter
-    _print_Derivative = emptyPrinter
-    _print_dict = emptyPrinter
-    _print_Dummy = emptyPrinter
-    _print_ExprCondPair = emptyPrinter
-    _print_GeometryEntity = emptyPrinter
-    _print_Infinity = emptyPrinter
-    _print_Integral = emptyPrinter
-    _print_Interval = emptyPrinter
-    _print_Limit = emptyPrinter
-    _print_list = emptyPrinter
-    _print_Matrix = emptyPrinter
-    _print_DeferredVector = emptyPrinter
-    _print_NaN = emptyPrinter
-    _print_NegativeInfinity = emptyPrinter
-    _print_Normal = emptyPrinter
-    _print_Order = emptyPrinter
-    _print_PDF = emptyPrinter
-    _print_Relational = emptyPrinter
-    _print_RootOf = emptyPrinter
-    _print_RootsOf = emptyPrinter
-    _print_RootSum = emptyPrinter
-    _print_Sample = emptyPrinter
-    _print_SMatrix = emptyPrinter
-    _print_tuple = emptyPrinter
-    _print_Uniform = emptyPrinter
-    _print_Unit = emptyPrinter
-    _print_Wild = emptyPrinter
-    _print_WildFunction = emptyPrinter
-
-    def _print_Function(self, expr):
-        name = self._settings["user_functions"].get(expr.__class__)
-        if name is None and expr.func in implicit_functions:
-            if expr.func == conjugate:
-                name = "conjg"
-            else:
-                name = expr.func.__name__
-        if name is None:
-            raise NotImplementedError("Function not available in Fortran: %s" % expr)
-        else:
-            return "%s(%s)" % (name, self.stringify(expr.args, ", "))
-
-    _print_Factorial = _print_Function
+    _print_Basic = _print_not_fortran
+    _print_ComplexInfinity = _print_not_fortran
+    _print_Derivative = _print_not_fortran
+    _print_dict = _print_not_fortran
+    _print_Dummy = _print_not_fortran
+    _print_ExprCondPair = _print_not_fortran
+    _print_GeometryEntity = _print_not_fortran
+    _print_Infinity = _print_not_fortran
+    _print_Integral = _print_not_fortran
+    _print_Interval = _print_not_fortran
+    _print_Limit = _print_not_fortran
+    _print_list = _print_not_fortran
+    _print_Matrix = _print_not_fortran
+    _print_DeferredVector = _print_not_fortran
+    _print_NaN = _print_not_fortran
+    _print_NegativeInfinity = _print_not_fortran
+    _print_Normal = _print_not_fortran
+    _print_Order = _print_not_fortran
+    _print_PDF = _print_not_fortran
+    _print_RootOf = _print_not_fortran
+    _print_RootsOf = _print_not_fortran
+    _print_RootSum = _print_not_fortran
+    _print_Sample = _print_not_fortran
+    _print_SMatrix = _print_not_fortran
+    _print_tuple = _print_not_fortran
+    _print_Uniform = _print_not_fortran
+    _print_Unit = _print_not_fortran
+    _print_Wild = _print_not_fortran
+    _print_WildFunction = _print_not_fortran
 
 
-def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False, human=True):
+def fcode(expr, assign_to=None, precision=15, user_functions={}, human=True):
     """Converts an expr to a string of Fortran 77 code
 
        Arguments:
@@ -229,9 +217,6 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False, h
          precision  --  the precission for numbers such as pi [default=15]
          user_functions  --  A dictionary where keys are FuncionClass instances
                              and values are there string representations.
-         strict  --  If True, an error is raised if the generated code is not
-                     compilable (without making assumptions about the presence
-                     of non-standard Fortran functions). [default=False]
          human  --  If True, the result is a single string that may contain
                     some PARAMETER statements for the numer symbols. If
                     False, the same information is returned in a more
@@ -260,20 +245,23 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False, h
         "assign_to": assign_to,
         "user_functions": user_functions,
     }
-    if strict:
-        result = StrictFCodePrinter(profile).doprint(expr)
-    else:
-        result = FCodePrinter(profile).doprint(expr)
+    printer = FCodePrinter(profile)
+    result = printer.doprint(expr)
     if human:
-        result = "".join(
-            "      parameter (%s = %s)\n" % (name, value) for name, value in number_symbols
-        ) + result
-        return result
+        lines = []
+        if len(printer.not_fortran) > 0:
+            lines.append("C     Not Fortran 77:")
+            for expr in sorted(printer.not_fortran):
+                lines.append("C     %s" % expr)
+        for name, value in number_symbols:
+            lines.append("      parameter (%s = %s)" % (name, value))
+        lines.append(result)
+        return "\n".join(lines)
     else:
-        return number_symbols, result
+        return number_symbols, printer.not_fortran, result
 
 
-def print_fcode(expr, assign_to=None, precision=15, user_functions={}, strict=False):
+def print_fcode(expr, assign_to=None, precision=15, user_functions={}):
     """Prints the Fortran representation of the given expression.
 
        See fcode for the meaning of the optional arguments.
