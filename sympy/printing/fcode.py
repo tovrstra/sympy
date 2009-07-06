@@ -135,8 +135,9 @@ class FCodePrinter(StrPrinter):
             return StrPrinter._print_Mul(self, expr)
 
     def _print_NumberSymbol(self, expr):
-        # Standard Fortran has no predefined constants. Therefor NumerSymbols
-        # are evaluated.
+        # Standard Fortran has no predefined constants. Write their string
+        # representation, and assume parameter statements are defined elsewhere
+        # in the code to make this work.
         return str(expr)
 
     _print_Catalan = _print_NumberSymbol
@@ -162,7 +163,7 @@ class FCodePrinter(StrPrinter):
         self.not_fortran.add(expr)
         return StrPrinter.emptyPrinter(self, expr)
 
-    # the following can not be simply translated into Fortran.
+    # The following can not be simply translated into Fortran.
     _print_Basic = _print_not_fortran
     _print_ComplexInfinity = _print_not_fortran
     _print_Derivative = _print_not_fortran
@@ -195,26 +196,27 @@ class FCodePrinter(StrPrinter):
 
 
 def wrap_fortran(lines):
-    """Wrap long fortran lines
+    """Wrap long Fortran lines
 
        Argument:
          lines  --  a list of lines (without \\n character)
 
-       A comment line is split at white space. Code lines are split at the
-       beginning of words. (see \\w in re module)
+       A comment line is split at white space. Code lines are split with a more
+       complex rule to give nice results.
     """
+    # routine to find split point in a code line
     my_alnum = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")
     my_white = set(" \t()")
     def split_pos_code(line, endpos):
         if len(line) <= endpos:
             return len(line)
         pos = endpos
-        splitable = lambda pos: \
+        split = lambda pos: \
             (line[pos] in my_alnum and line[pos-1] not in my_alnum) or \
             (line[pos] not in my_alnum and line[pos-1] in my_alnum) or \
             (line[pos] in my_white and line[pos-1] not in my_white) or \
             (line[pos] not in my_white and line[pos-1] in my_white)
-        while not splitable(pos):
+        while not split(pos):
             pos -= 1
             if pos == 0:
                 return endpos
@@ -264,13 +266,13 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, human=True):
 
        Optional arguments:
          assign_to  --  When given, the argument is used as the name of the
-                        variable to which the fortran expression is assigned.
-                        (This is helpfull in case of line-wrapping.)
-         precision  --  the precission for numbers such as pi [default=15]
-         user_functions  --  A dictionary where keys are FuncionClass instances
+                        variable to which the Fortran expression is assigned.
+                        (This is helpful in case of line-wrapping.)
+         precision  --  the precision for numbers such as pi [default=15]
+         user_functions  --  A dictionary where keys are FunctionClass instances
                              and values are there string representations.
          human  --  If True, the result is a single string that may contain
-                    some PARAMETER statements for the numer symbols. If
+                    some parameter statements for the number symbols. If
                     False, the same information is returned in a more
                     programmer-friendly data structure.
 
@@ -299,6 +301,7 @@ def fcode(expr, assign_to=None, precision=15, user_functions={}, human=True):
     }
     printer = FCodePrinter(profile)
     result = printer.doprint(expr)
+    # format the output
     if human:
         lines = []
         if len(printer.not_fortran) > 0:
