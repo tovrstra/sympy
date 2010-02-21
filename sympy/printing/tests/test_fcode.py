@@ -9,8 +9,8 @@ from sympy.printing.fcode import fcode, wrap_fortran
 def test_printmethod():
     x = symbols('x')
     class nint(Function):
-        def _fcode_(self):
-            return "nint(%s)" % fcode(self.args[0])
+        def _fcode_(self, printer):
+            return "nint(%s)" % printer._print(self.args[0])
     assert fcode(nint(x)) == "      nint(x)"
 
 def test_fcode_Pow():
