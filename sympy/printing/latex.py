@@ -11,7 +11,7 @@ from sympy import Interval
 import sympy.mpmath.libmpf as mlib
 from sympy.mpmath.settings import prec_to_dps
 
-import re
+import re, warnings
 
 class LatexPrinter(Printer):
     printmethod = "_latex_"
@@ -43,10 +43,9 @@ class LatexPrinter(Printer):
 
         if profile is not None:
             if profile.has_key('inline'):
-                msg = "'inline' is deprecated, please use 'mode'.\n" + \
-                      "'mode' can be one of 'inline', 'plain', \n" + \
-                      "'equation', or 'equation*'."
-                print(msg)
+                warnings.warn("'inline' is deprecated, please use 'mode'. "
+                    "'mode' can be one of 'inline', 'plain', 'equation', or "
+                    "'equation*'.")
                 if profile['inline']:
                     profile['mode'] = 'inline'
                 else:
